@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raptor Ghost · MT5 Control</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #080a0f;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 0 0 20px;
+    }
+
+    /* main container – mimics mobile width with realistic shadow */
+    .app {
+      max-width: 430px;
+      width: 100%;
+      margin: 0 auto;
+      background: #080a0f;
+      border-radius: 0;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+      padding-bottom: 20px;
+    }
+
+    /* top bar */
+    .top-bar {
+      background: #0f1422;
+      border-bottom: 1px solid #232a3e;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .logo {
+      color: #f5c518;
+      font-size: 1.2rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .logo::before {
+      content: "⚡";
+      color: #f5c518;
+      font-size: 1.3rem;
+    }
+
+    .status-badge {
+      font-size: 0.8rem;
+      background: #1c2333;
+      padding: 5px 12px;
+      border-radius: 30px;
+      color: #a0aec0;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #2d3748;
+    }
+
+    .status-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #b91c2c;
+      display: inline-block;
+      box-shadow: 0 0 6px #b91c2c;
+    }
+
+    /* cards */
+    .card {
+      background: #11141e;
+      border: 1px solid #232a3e;
+      border-radius: 18px;
+      padding: 18px 16px;
+      margin: 14px 12px;
+      box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.6);
+      transition: border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: #2f3a4e;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f5c518;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .card-title i {
+      font-style: normal;
+      font-size: 1.2rem;
+    }
+
+    /* inputs and selects */
+    input, select, .pseudo-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: #0d111d;
+      border: 1px solid #2a3147;
+      border-radius: 12px;
+      color: #f0f4ff;
+      font-size: 0.95rem;
+      margin: 6px 0 12px;
+      font-family: inherit;
+      outline: none;
+      transition: border 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus, select:focus {
+      border-color: #f5c518;
+      box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.1);
+    }
+
+    input::placeholder {
+      color: #5d6a83;
+      font-weight: 400;
+    }
+
+    /* buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      width: 100%;
+      letter-spacing: 0.3px;
+      background: #f5c518;
+      color: #080a0f;
+      box-shadow: 0 6px 16px -6px rgba(245, 197, 24, 0.3);
+    }
+
+    .btn:hover {
+      background: #ffd93b;
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .btn-secondary {
+      background: #1e2538;
+      color: #e2e8f0;
+      box-shadow: none;
+      border: 1px solid #2d364b;
+    }
+
+    .btn-secondary:hover {
+      background: #2a3348;
+    }
+
+    .btn-green {
+      background: #0a7a4a;
+      color: white;
+      box-shadow: 0 6px 14px -6px #0a7a4a;
+    }
+
+    .btn-green:hover {
+      background: #0e8f58;
+    }
+
+    .btn-red {
+      background: #b91c2c;
+      color: white;
+      box-shadow: 0 6px 14px -6px #b91c2c;
+    }
+
+    .btn-red:hover {
+      background: #d62234;
+    }
+
+    .btn-gold {
+      background: #f5c518;
+      color: #080a0f;
+    }
+
+    .flex-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .flex-row .btn {
+      flex: 1;
+    }
+
+    /* chart canvas */
+    .chart-container {
+      background: #0b0f18;
+      border-radius: 12px;
+      padding: 8px 4px;
+      margin-bottom: 14px;
+      border: 1px solid #1f2638;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 80px;
+      border-radius: 6px;
+    }
+
+    /* analysis rows */
+    .analysis-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 0.92rem;
+      border-bottom: 1px solid #1b212f;
+    }
+
+    .analysis-row:last-child {
+      border-bottom: none;
+    }
+
+    .analysis-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #b9c2d4;
+      font-weight: 500;
+    }
+
+    .analysis-label i {
+      font-style: normal;
+      font-size: 1.1rem;
+    }
+
+    .analysis-value {
+      font-weight: 600;
+      color: #eef2f9;
+      background: #1a1f2e;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      border: 1px solid #2c3448;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot-green {
+      color: #00ff88;
+      text-shadow: 0 0 6px #00ff88;
+    }
+
+    .score-high {
+      color: #00ff88;
+      background: rgba(0, 255, 136, 0.08);
+      border-color: #0f7a4a;
+    }
+
+    /* bot control section */
+    .bot-selector {
+      margin-bottom: 10px;
+    }
+
+    /* trades / log placeholder */
+    #trades {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #7e8aa0;
+      background: #0b0f18;
+      border-radius: 10px;
+      padding: 10px;
+      border: 1px solid #1e2538;
+      min-height: 40px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+    }
+
+    /* additional realistic micro-details */
+    .glow-text {
+      text-shadow: 0 0 8px rgba(245, 197, 24, 0.5);
+    }
+
+    .gold {
+      color: #f5c518;
+    }
+
+    .balance-tag {
+      font-size: 0.8rem;
+      color: #7e8aa0;
+      display: flex;
+      justify-content: space-between;
+      margin-top: -4px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- header -->
+    <div class="top-bar">
+      <div class="logo">RAPTOR GHOST</div>
+      <div class="status-badge" id="statusBadge">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">DISCONNECTED</span>
+      </div>
+    </div>
+
+    <!-- MT5 ACCOUNT CARD -->
+    <div class="card">
+      <div class="card-title"><i>🛡️</i> MT5 ACCOUNT</div>
+      <select id="broker" aria-label="Broker">
+        <option value="Exness" selected>Exness</option>
+        <option value="XM">XM</option>
+        <option value="IC Markets">IC Markets</option>
+        <option value="Pepperstone">Pepperstone</option>
+      </select>
+      <input id="login" placeholder="Login 56197382" value="56197382" autocomplete="off">
+      <input id="pass" type="password" placeholder="Password" value="••••••••" autocomplete="off">
+      <select id="server" aria-label="Server">
+        <option value="Exness-Real23" selected>Exness-Real23</option>
+        <option value="Exness-Real">Exness-Real</option>
+        <option value="XM-Real7">XM-Real7</option>
+        <option value="ICMarkets-Live04">ICMarkets-Live04</option>
+      </select>
+      <button class="btn btn-gold" id="connectBtn">⚡ CONNECT ACCOUNT</button>
+    </div>
+
+    <!-- LIVE ANALYSIS CARD -->
+    <div class="card">
+      <div class="card-title"><i>📊</i> LIVE ANALYSIS</div>
+      <div class="chart-container">
+        <canvas id="chart" width="300" height="80"></canvas>
+      </div>
+      <div class="analysis-row">
+        <span class="analysis-label"><i>🔍</i> Detecting market</span>
+        <span class="analysis-value"><span class="dot-green">●</span> Active</span>
+      </div>
+      <div class="analysis-row">
+        <span class="analysis-label"><i>📈</i> Calibrating stop loss</span>
+        <span class="analysis-value"><span class="dot-green">●</span> Stable</span>
+      </div>
+      <div class="analysis-row">
+        <span class="analysis-label"><i>🤖</i> AI scoring</span>
+        <span class="analysis-value score-high" id="aiScore">88/100 High Confidence</span>
+      </div>
+    </div>
+
+    <!-- BOT CONTROL CARD -->
+    <div class="card">
+      <div class="card-title"><i>🤖</i> BOT CONTROL</div>
+      <select id="botType" class="bot-selector">
+        <option value="safe">Phantom V13 Safe Elite (0.01/$10)</option>
+        <option value="elite">Phantom V13 Elite Copy (0.03 fixed)</option>
+        <option value="balance">Phantom V13 Balance Adaptive</option>
+      </select>
+      <div class="flex-row">
+        <button class="btn btn-green" id="startBtn">▶ START BOT</button>
+        <button class="btn btn-red" id="stopBtn">■ STOP BOT</button>
+      </div>
+      <div id="trades">⏳ Waiting for bot activity...</div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      // ----- DOM refs -----
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const statusBadge = document.getElementById('statusBadge');
+      const connectBtn = document.getElementById('connectBtn');
+      const loginInput = document.getElementById('login');
+      const passInput = document.getElementById('pass');
+      const serverSelect = document.getElementById('server');
+      const brokerSelect = document.getElementById('broker');
+      const aiScoreSpan = document.getElementById('aiScore');
+      const chartCanvas = document.getElementById('chart');
+      const ctx = chartCanvas.getContext('2d');
+      const tradesDiv = document.getElementById('trades');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const botTypeSelect = document.getElementById('botType');
+
+      // ----- state -----
+      let isConnected = false;
+      let isBotRunning = false;
+      let balance = 15.00;         // default $15 as in original hint
+      let chartData = [20, 22, 19, 24, 26, 23, 28]; // base points
+
+      // ----- utility: update chart -----
+      function drawChart() {
+        const w = 300, h = 80;
+        ctx.clearRect(0, 0, w, h);
+
+        // background grid (realistic trading chart subtle lines)
+        ctx.strokeStyle = '#1b212f';
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i <= 4; i++) {
+          const y = (i / 4) * h;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+
+        // draw gold line
+        ctx.strokeStyle = '#f5c518';
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = '#f5c51855';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        chartData.forEach((v, i) => {
+          const x = (i / (chartData.length - 1)) * w;
+          const y = h - v; // v range 0-40 (since max 28)
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // draw dots at each point for realism
+        ctx.fillStyle = '#f5c518';
+        chartData.forEach((v, i) => {
+          const x = (i / (chartData.length - 1)) * w;
+          const y = h - v;
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fillStyle = '#f5c518';
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = '#f5c518';
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        });
+      }
+
+      // ----- generate a new slightly random chart (dynamic) -----
+      function refreshChart() {
+        // small random walk
+        const last = chartData[chartData.length - 1];
+        let next = last + (Math.random() * 6 - 2.5);
+        next = Math.min(38, Math.max(10, next));
+        chartData.push(next);
+        if (chartData.length > 12) chartData.shift();
+        drawChart();
+      }
+
+      // initial draw
+      drawChart();
+
+      // update chart every 1.5 seconds for live feel (only if bot running or connected? but we want realism always)
+      setInterval(() => {
+        refreshChart();
+        // also randomize AI score slightly, but only if connected
+        if (isConnected) {
+          const score = Math.floor(82 + Math.random() * 15);
+          const confidence = score > 90 ? 'Very High' : (score > 84 ? 'High' : 'Medium');
+          aiScoreSpan.textContent = `${score}/100 ${confidence} Confidence`;
+        } else {
+          // still update a bit but keep it calm
+          const score = Math.floor(85 + Math.random() * 10);
+          aiScoreSpan.textContent = `${score}/100 High Confidence`;
+        }
+      }, 1800);
+
+      // ----- helper to update status UI -----
+      function setConnectedUI(connected) {
+        isConnected = connected;
+        if (connected) {
+          statusDot.style.background = '#00ff88';
+          statusDot.style.boxShadow = '0 0 8px #00ff88';
+          statusText.textContent = 'CONNECTED';
+          statusBadge.style.borderColor = '#0f7a4a';
+          statusBadge.style.color = '#e2f0e2';
+        } else {
+          statusDot.style.background = '#b91c2c';
+          statusDot.style.boxShadow = '0 0 6px #b91c2c';
+          statusText.textContent = 'DISCONNECTED';
+          statusBadge.style.borderColor = '#2d3748';
+          statusBadge.style.color = '#a0aec0';
+        }
+      }
+
+      // ----- connect handler (simulated, but realistic) -----
+      async function handleConnect() {
+        const loginVal = loginInput.value.trim();
+        const passVal = passInput.value.trim();
+        const serverVal = serverSelect.value;
+        const brokerVal = brokerSelect.value;
+
+        if (!loginVal || !passVal) {
+          alert('Please fill login and password fields.');
+          return;
+        }
+
+        // Simulate API call delay
+        connectBtn.disabled = true;
+        connectBtn.textContent = '⏳ CONNECTING...';
+
+        // Realistic: sometimes fails if password too short (just for demo)
+        setTimeout(() => {
+          if (passVal.length < 3) {
+            alert('Authentication failed. Please check your credentials.');
+            connectBtn.disabled = false;
+            connectBtn.innerHTML = '⚡ CONNECT ACCOUNT';
+            return;
+          }
+
+          // success
+          isConnected = true;
+          setConnectedUI(true);
+          connectBtn.disabled = false;
+          connectBtn.innerHTML = '⚡ CONNECT ACCOUNT';
+          // update balance display in a subtle way (we show via alert)
+          const simulatedBalance = (Math.random() * 90 + 10).toFixed(2); // 10-100
+          balance = parseFloat(simulatedBalance);
+          alert(`✅ MT5 Connected!\nBroker: ${brokerVal}\nServer: ${serverVal}\nLogin: ${loginVal}\nBalance: $${balance}`);
+
+          // update trades log to feel real
+          tradesDiv.textContent = `🟢 MT5 connected · balance $${balance}`;
+        }, 700);
+      }
+
+      // ----- start bot handler -----
+      async function handleStart() {
+        if (!isConnected) {
+          alert('⚠️ Please connect to MT5 account first.');
+          return;
+        }
+        if (isBotRunning) {
+          alert('Bot is already running.');
+          return;
+        }
+
+        const botType = botTypeSelect.value;
+        const loginVal = loginInput.value.trim() || '56197382';
+
+        startBtn.disabled = true;
+        startBtn.textContent = '⏳ STARTING...';
+
+        setTimeout(() => {
+          isBotRunning = true;
+          startBtn.disabled = false;
+          startBtn.innerHTML = '▶ START BOT';
+          stopBtn.disabled = false;
+
+          const botNames = {
+            safe: 'Phantom V13 Safe Elite',
+            elite: 'Phantom V13 Elite Copy',
+            balance: 'Phantom V13 Balance Adaptive'
+          };
+          const botName = botNames[botType] || 'Phantom V13';
+
+          tradesDiv.innerHTML = `🤖 ${botName} started on ${loginVal} · running`;
+          alert(`✅ Bot started on real account!\nType: ${botName}\nAccount: ${loginVal}`);
+
+          // random log updates to feel alive
+          if (window.botInterval) clearInterval(window.botInterval);
+          window.botInterval = setInterval(() => {
+            if (!isBotRunning) return;
+            const actions = ['📊 Scanning market...', '⚡ Executing trade...', '🛡️ Stop loss adjusted', '📈 TP set', '🤖 AI re-evaluating', '✅ Trade closed +$0.32'];
+            const randomAction = actions[Math.floor(Math.random() * actions.length)];
+            tradesDiv.innerHTML = `🤖 ${randomAction} · ${new Date().toLocaleTimeString()}`;
+          }, 3500);
+        }, 500);
+      }
+
+      // ----- stop bot handler -----
+      async function handleStop() {
+        if (!isConnected) {
+          alert('Not connected to MT5.');
+          return;
+        }
+        if (!isBotRunning) {
+          alert('Bot is not running.');
+          return;
+        }
+
+        stopBtn.disabled = true;
+        stopBtn.textContent = '⏳ STOPPING...';
+
+        setTimeout(() => {
+          isBotRunning = false;
+          stopBtn.disabled = false;
+          stopBtn.innerHTML = '■ STOP BOT';
+          startBtn.disabled = false;
+
+          tradesDiv.innerHTML = '🛑 Bot stopped · no active trades';
+          alert('🛑 Bot stopped.');
+
+          if (window.botInterval) {
+            clearInterval(window.botInterval);
+            window.botInterval = null;
+          }
+        }, 400);
+      }
+
+      // ----- event listeners -----
+      connectBtn.addEventListener('click', handleConnect);
+      startBtn.addEventListener('click', handleStart);
+      stopBtn.addEventListener('click', handleStop);
+
+      // initial UI state
+      setConnectedUI(false);
+      // prefill login from placeholder (realistic)
+      loginInput.value = '56197382';
+      passInput.value = 'securepass123'; // dummy
+
+      // add small hover effect on card titles
+      // extra realism: when disconnected, start button disabled? no, we want it clickable to show alert
+      // but we can style it subtle. it's fine.
+
+      // Additional: if user clicks start without connect, we show alert.
+
+      // canvas resize handling to keep crisp (optional)
+      function resizeCanvas() {
+        const container = chartCanvas.parentElement;
+        const width = container.clientWidth - 12;
+        chartCanvas.width = width;
+        chartCanvas.height = 80;
+        drawChart();
+      }
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+      });
+      // initial resize after load
+      setTimeout(resizeCanvas, 50);
+    })();
+  </script>
+</body>
+</html>
